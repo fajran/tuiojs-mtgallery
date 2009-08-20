@@ -96,10 +96,26 @@ function updatePosition(d) {
 var touch = {
 	add: function(fid, x, y) {
 		console.log('touch: add:', fid, x, y);
+		var d = dataFromPoint(x, y);
+		if (d) {
+			d.px = x;
+			d.py = y;
+			d.x0 = d.x;
+			d.y0 = d.y;
+			console.log(d.img.src);
+		}
 	},
 
 	update: function(fid, x, y) {
 		console.log('touch: update:', fid, x, y);
+		var d = dataFromPoint(x, y);
+		if (d) {
+			var dx = x - d.px;
+			var dy = y - d.py;
+			d.x = d.x0 + dx;
+			d.y = d.y0 + dy;
+			updatePosition(d);
+		}
 	},
 
 	remove: function(fid, x, y) {
