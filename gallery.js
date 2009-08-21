@@ -135,6 +135,10 @@ function updateScaleRotate(d) {
 		'width': d.w+'px',
 		'height': d.h+'px',
 	});
+	d.obj.css({
+		'-webkit-transform': 'rotate(' + d.rotate + 'rad)',
+		'-moz-transform': 'rotate(' + d.rotate + 'rad)',
+	});
 }
 
 var touchObject = {};
@@ -198,13 +202,20 @@ function getDistance(t1, t2) {
 	return Math.sqrt(dx*dx + dy*dy);
 }
 
+function getAngle(t1, t2) {
+	var dx = t2.x - t1.x;
+	var dy = t2.y - t1.y;
+	return Math.atan(dy/dx);
+}
+
 var gesture = {
 	start: function(d, x, y) {
 		var t1 = touches[touchesTarget[d][0]];
 		var t2 = touches[touchesTarget[d][1]];
 
 		d._gesture = {
-			d0: getDistance(t1, t2)
+			d0: getDistance(t1, t2),
+			r0: getAngle(t1, t2)
 		}
 	},
 
@@ -226,8 +237,13 @@ var gesture = {
 		d.x -= dw/2;
 		d.y -= dh/2;
 
+		var angle = getAngle(t1, t2);
+		var rotate = angle - d._gesture.r0;
+		d.rotate += rotate;
+
 		d._gesture = {
-			d0: distance
+			d0: distance,
+			r0: angle
 		}
 
 		updatePosition(d);
