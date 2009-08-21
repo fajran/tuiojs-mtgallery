@@ -123,61 +123,104 @@ function updatePosition(d) {
 }
 
 var touchObject = {};
+var touches = {};
 var touchesTarget = {};
 
-function addTouch(d, fid) {
-	touchObject[fid] = d;
+function addTouch(d, t) {
+	touches[t.fid] = t;
+	touchObject[t.fid] = d;
 
 	if (touchesTarget[d] == undefined) {
 		touchesTarget[d] = [];
 	}
 
-	touchesTarget[d].push(fid);
+	touchesTarget[d].push(t.fid);
 }
 
-function removeTouch(fid) {
-	var d = touchObject[fid];
-	touchObject[fid] = undefined;
+function updateTouch(d, t) {
+	touches[t.fid] = t;
+}
 
-	var i, size = touchesTarget[d];
+function removeTouch(t) {
+	var d = touchObject[t.fid];
+	touchObject[t.fid] = undefined;
+
+	var i, size = touchesTarget[d].length;
 	for (i=0; i<size; i++) {
-		if (touchesTarget[d][i] == fid) {
-			touchesTarget = touchesTarget.slice(0, i).concat(touchesTarget.slice(i+1));
+		console.log(touchesTarget[d][i]);
+		if (touchesTarget[d][i] == t.fid) {
+			touchesTarget[d] = touchesTarget[d].slice(0, i).concat(touchesTarget[d].slice(i+1));
 			break;
 		}
 	}
 }
 
+var move = {
+	start: function(d) {
+		var t = touches[touchesTarget[d][0]];
+		d.px = t.nx;
+		d.py = t.ny;
+		d.x0 = d.x;
+		d.y0 = d.y;
+	},
+
+	update: function(d) {
+		var t = touches[touchesTarget[d][0]];
+		var dx = t.nx - d.px;
+		var dy = t.ny - d.py;
+		d.x = d.x0 + dx;
+		d.y = d.y0 + dy;
+		updatePosition(d);
+	},
+
+	finish: function(d, x, y) {
+
+	}
+};
+
+var gesture = {
+	start: function(d, x, y) {
+
+	},
+
+	update: function(d, x, y) {
+
+	},
+
+	finish: function(d, x, y) {
+
+	}
+};
+
 var touch = {
-	add: function(fid, x, y) {
-		console.log('touch: add:', fid, x, y);
-		var d = dataFromPoint(x, y);
+	add: function(t) {
+		console.log('touch: add:', t.fid, t.nx, t.ny);
+		var d = dataFromPoint(t.nx, t.ny);
 		if (d) {
-			addTouch(d, fid);
-			d.px = x;
-			d.py = y;
-			d.x0 = d.x;
-			d.y0 = d.y;
-			console.log(d.img.src);
+			addTouch(d, t);
 			moveToTop(d);
+
+			var n = touchesTarget[d].length;
+			if (n == 1) { move.start(d); }
+			else if (n == 2) { gesture.start(d); }
 		}
 	},
 
-	update: function(fid, x, y) {
-		console.log('touch: update:', fid, x, y);
-		var d = touchObject[fid];
+	update: function(t) {
+		console.log('touch: update:', t.fid, t.nx, t.ny);
+		var d = touchObject[t.fid];
 		if (d) {
-			var dx = x - d.px;
-			var dy = y - d.py;
-			d.x = d.x0 + dx;
-			d.y = d.y0 + dy;
-			updatePosition(d);
+			updateTouch(d, t);
+
+			var n = touchesTarget[d].length;
+			if (n == 1) { move.update(d); }
+			else if (n == 2) { gesture.update(d); }
 		}
 	},
 
-	remove: function(fid, x, y) {
-		console.log('touch: remove:', fid, x, y);
-		removeTouch(fid);
+	remove: function(t) {
+		console.log('touch: remove:', t.fid);
+		removeTouch(t);
 	}
 };
 
@@ -185,16 +228,20 @@ var touch = {
 (function() {
 var mousedown = false;
 document.addEventListener('mousedown', function(e) {
- 	touch.add(0, e.clientX, e.clientY);
+	var x = e.clientX / window.innerWidth;
+	var y = e.clientY / window.innerHeight;
+ 	touch.add({ fid: 0, x: x, y: y, nx: e.clientX, ny: e.clientY });
  	mousedown = true;
 }, true);
 document.addEventListener('mousemove', function(e) {
 	if (mousedown) {
- 		touch.update(0, e.clientX, e.clientY);
+		var x = e.clientX / window.innerWidth;
+		var y = e.clientY / window.innerHeight;
+ 		touch.update({ fid: 0, x: x, y: y, nx: e.clientX, ny: e.clientY });
 	}
 }, true);
 document.addEventListener('mouseup', function(e) {
- 	touch.remove(0, e.clientX, e.clientY);
+ 	touch.remove({ fid: 0 });
  	mousedown = false;
 }, true);
 })();
