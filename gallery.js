@@ -6,7 +6,15 @@ var data = [];
 var data_list = [];
 var maxZIndex = 1;
 
-var psize = 150;
+(function() {
+if (!this.console || !this.console.log) {
+	this.console = {
+		log: function() { }
+	};
+}
+})();
+
+var psize = 300;
 
 function load(d) {
 	var res = {
@@ -122,6 +130,13 @@ function updatePosition(d) {
 	});
 }
 
+function updateScaleRotate(d) {
+	d.imgobj.css({
+		'width': d.w+'px',
+		'height': d.h+'px',
+	});
+}
+
 var touchObject = {};
 var touches = {};
 var touchesTarget = {};
@@ -135,6 +150,7 @@ function addTouch(d, t) {
 	}
 
 	touchesTarget[d].push(t.fid);
+	console.log(touchesTarget[d].toString());
 }
 
 function updateTouch(d, t) {
@@ -143,11 +159,11 @@ function updateTouch(d, t) {
 
 function removeTouch(t) {
 	var d = touchObject[t.fid];
+	if (!d) { return; }
 	touchObject[t.fid] = undefined;
 
 	var i, size = touchesTarget[d].length;
 	for (i=0; i<size; i++) {
-		console.log(touchesTarget[d][i]);
 		if (touchesTarget[d][i] == t.fid) {
 			touchesTarget[d] = touchesTarget[d].slice(0, i).concat(touchesTarget[d].slice(i+1));
 			break;
@@ -158,18 +174,16 @@ function removeTouch(t) {
 var move = {
 	start: function(d) {
 		var t = touches[touchesTarget[d][0]];
-		d.px = t.nx;
-		d.py = t.ny;
-		d.x0 = d.x;
-		d.y0 = d.y;
+		d._move = {
+			dx: d.x - t.nx,
+			dy: d.y - t.ny
+		}
 	},
 
 	update: function(d) {
 		var t = touches[touchesTarget[d][0]];
-		var dx = t.nx - d.px;
-		var dy = t.ny - d.py;
-		d.x = d.x0 + dx;
-		d.y = d.y0 + dy;
+		d.x = t.nx + d._move.dx;
+		d.y = t.ny + d._move.dy;
 		updatePosition(d);
 	},
 
@@ -178,13 +192,46 @@ var move = {
 	}
 };
 
+function getDistance(t1, t2) {
+	var dx = t2.x - t1.x;
+	var dy = t2.y - t1.y;
+	return Math.sqrt(dx*dx + dy*dy);
+}
+
 var gesture = {
 	start: function(d, x, y) {
+		var t1 = touches[touchesTarget[d][0]];
+		var t2 = touches[touchesTarget[d][1]];
 
+		d._gesture = {
+			d0: getDistance(t1, t2)
+		}
 	},
 
 	update: function(d, x, y) {
+		var t1 = touches[touchesTarget[d][0]];
+		var t2 = touches[touchesTarget[d][1]];
 
+		var distance = getDistance(t1, t2);
+
+		var scale = distance / d._gesture.d0;
+
+		d.scale = d.scale * scale;
+		var w = d.w * scale;
+		var h = d.h * scale;
+		var dw = w - d.w;
+		var dh = h - d.h;
+		d.w = w;
+		d.h = h;
+		d.x -= dw/2;
+		d.y -= dh/2;
+
+		d._gesture = {
+			d0: distance
+		}
+
+		updatePosition(d);
+		updateScaleRotate(d);
 	},
 
 	finish: function(d, x, y) {
@@ -194,32 +241,31 @@ var gesture = {
 
 var touch = {
 	add: function(t) {
-		console.log('touch: add:', t.fid, t.nx, t.ny);
 		var d = dataFromPoint(t.nx, t.ny);
 		if (d) {
 			addTouch(d, t);
 			moveToTop(d);
 
 			var n = touchesTarget[d].length;
+			console.log('n:', n);
 			if (n == 1) { move.start(d); }
 			else if (n == 2) { gesture.start(d); }
 		}
 	},
 
 	update: function(t) {
-		console.log('touch: update:', t.fid, t.nx, t.ny);
 		var d = touchObject[t.fid];
 		if (d) {
 			updateTouch(d, t);
 
 			var n = touchesTarget[d].length;
+			console.log('n:', n);
 			if (n == 1) { move.update(d); }
 			else if (n == 2) { gesture.update(d); }
 		}
 	},
 
 	remove: function(t) {
-		console.log('touch: remove:', t.fid);
 		removeTouch(t);
 	}
 };
@@ -245,4 +291,21 @@ document.addEventListener('mouseup', function(e) {
  	mousedown = false;
 }, true);
 })();
+
+function normalizePos(t) {
+	t.nx = parseInt(t.x * window.innerWidth);
+	t.ny = parseInt(t.y * window.innerHeight);
+	return t;
+}
+
+var listener = new tuio.Listener({
+	cursor_add:    function(t) { touch.add(normalizePos(t)); },
+	cursor_update: function(t) { touch.update(normalizePos(t)); },
+	cursor_remove: function(t) { touch.remove(normalizePos(t)); }
+});
+
+$(document).ready(function() {
+	tuio.addListener(listener);
+	tuio.start();
+});
 

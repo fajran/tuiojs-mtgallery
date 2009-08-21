@@ -1,8 +1,11 @@
 <html><head>
 <style type="text/css">
-body { margin: 0px; padding: 0px; }
+body { margin: 0px; padding: 0px; overflow: hidden; }
 .item { position: absolute; }
 </style>
+<script type="text/javascript" src="tuio.js"></script>
+<script type="text/javascript" src="tuiojs.npTuioClient.js"></script>
+<script type="text/javascript" src="data.js"></script>
 <script type="text/javascript" src="data.js"></script>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="gallery.js"></script>
@@ -17,8 +20,6 @@ function touch_update(fid, x, y) {
 function touch_remove(fid, x, y) {
 	console.log('touch_remove:', fid, x, y);
 }
-
-
 
 </script>
 </head><body><div id="c">
