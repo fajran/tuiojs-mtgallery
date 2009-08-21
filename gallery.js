@@ -4,6 +4,7 @@ var w = 300;
 var h = 300;
 var data = [];
 var data_list = [];
+var maxZIndex = 1;
 
 var psize = 150;
 
@@ -13,6 +14,7 @@ function load(d) {
 
 	res.loaded = false;
 	res.img = new Image();
+	res.z = maxZIndex++;
 	res.img.onload = function() {
 		res.x = Math.floor(Math.random() * w);
 		res.y = Math.floor(Math.random() * h);
@@ -56,7 +58,8 @@ function initItem(d) {
 	d.obj.data('data', d);
 	d.obj.css({
 		'top': d.y+'px',
-		'left': d.x+'px'
+		'left': d.x+'px',
+		'z-index': d.z
 	});
 	d.imgobj = $('#'+d.id+' img');
 	d.imgobj.css({
@@ -86,6 +89,17 @@ function dataFromPoint(x, y) {
 	else { return undefined; }
 }
 
+function moveToTop(d) {
+	d.z = maxZIndex++;
+	updateOrder(d);
+}
+
+function updateOrder(d) {
+	d.obj.css({
+		'z-index': d.z
+	});
+}
+
 function updatePosition(d) {
 	d.obj.css({
 		'top': d.y + 'px',
@@ -106,6 +120,7 @@ var touch = {
 			d.x0 = d.x;
 			d.y0 = d.y;
 			console.log(d.img.src);
+			moveToTop(d);
 		}
 	},
 
