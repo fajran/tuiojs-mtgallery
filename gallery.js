@@ -100,6 +100,21 @@ function updateOrder(d) {
 	});
 }
 
+function normalizeOrder(d) {
+	var arr = [];
+	var i, size = data.length;
+
+	for (i=0; i<size; i++) {
+		arr[i] = data[i];
+	}
+
+	arr.sort(function(a, b) { a.z - b.z });
+	
+	for (i=0; i<size; i++) {
+		data[i].z = i+1;
+	}
+}
+
 function updatePosition(d) {
 	d.obj.css({
 		'top': d.y + 'px',
@@ -108,13 +123,37 @@ function updatePosition(d) {
 }
 
 var touchObject = {};
+var touchesTarget = {};
+
+function addTouch(d, fid) {
+	touchObject[fid] = d;
+
+	if (touchesTarget[d] == undefined) {
+		touchesTarget[d] = [];
+	}
+
+	touchesTarget[d].push(fid);
+}
+
+function removeTouch(fid) {
+	var d = touchObject[fid];
+	touchObject[fid] = undefined;
+
+	var i, size = touchesTarget[d];
+	for (i=0; i<size; i++) {
+		if (touchesTarget[d][i] == fid) {
+			touchesTarget = touchesTarget.slice(0, i).concat(touchesTarget.slice(i+1));
+			break;
+		}
+	}
+}
 
 var touch = {
 	add: function(fid, x, y) {
 		console.log('touch: add:', fid, x, y);
 		var d = dataFromPoint(x, y);
 		if (d) {
-			touchObject[fid] = d;
+			addTouch(d, fid);
 			d.px = x;
 			d.py = y;
 			d.x0 = d.x;
@@ -138,7 +177,7 @@ var touch = {
 
 	remove: function(fid, x, y) {
 		console.log('touch: remove:', fid, x, y);
-		touchObject[fid] = undefined;
+		removeTouch(fid);
 	}
 };
 
